@@ -1,18 +1,33 @@
 mod handlers;
 mod models;
-mod routes;
+mod rabbitmq;
+mod routes; // Import the rabbitmq module
 
 use std::net::SocketAddr;
-use tokio::{net::TcpListener, sync::mpsc};
+use tokio::net::TcpListener;
+use tracing::info;
+use tracing_subscriber;
 
 #[tokio::main]
 async fn main() {
-    let (tx, _rx) = mpsc::channel::<models::ApiRequest>(100);
+    tracing_subscriber::fmt::init(); // Initialize logging
 
-    // Create the router using the routes module
-    let app = routes::run(tx);
+    // Set up RabbitMQ channel using the rabbitmq module
+    let rabbitmq_channel = match rabbitmq::setup_rabbitmq().await {
+        Ok(channel) => channel,
+        Err(e) => {
+            eprintln!("Failed to connect to RabbitMQ: {:?}", e);
+            return;
+        }
+    };
 
-    // Run the server on localhost:3000
+    // Log RabbitMQ setup success
+    info!("RabbitMQ setup completed successfully");
+
+    // Create the router using the routes module, passing the RabbitMQ channel
+    let app = routes::run(rabbitmq_channel);
+
+    // Run the server on 0.0.0.0:3000
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     println!("Listening on {}", addr);
     let listener = TcpListener::bind(addr).await.unwrap();

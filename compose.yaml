@@ -1,31 +1,39 @@
-version: "3.8"
-
 services:
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
-      - "5672:5672" # AMQP port for RabbitMQ
+      - "5672:5672"   # AMQP port for RabbitMQ
       - "15672:15672" # RabbitMQ Management UI
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq # Persist data
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   rust-app:
     build:
-      context: . # Build the Rust app from the current directory
+      context: .  # Build the Rust app from the current directory
       dockerfile: Dockerfile
     container_name: rust-app
     ports:
-      - "3000:3000" # Expose Rust app on port 3000
+      - "3000:3000"  # Expose Rust app on port 3000
     volumes:
-      - .:/usr/src/api-queue-manager # Mount the current directory to the container
+      - .:/usr/src/api-queue-manager  # Mount the current directory to the container
     depends_on:
-      - rabbitmq # Ensure RabbitMQ starts before the Rust app
+      - rabbitmq  # Ensure RabbitMQ starts before the Rust app
     environment:
-      RABBITMQ_ADDR: amqp://guest:guest@rabbitmq:5672 # Set RabbitMQ connection string for the Rust app
+      RABBITMQ_ADDR: amqp://guest:guest@rabbitmq:5672 # Optional: Set RabbitMQ connection string for future use
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
 volumes:
   rabbitmq_data: # Named volume for persisting RabbitMQ data

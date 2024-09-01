@@ -1,4 +1,5 @@
 mod consumer;
+mod handler;
 
 use consumer::start_consumer;
 use lapin::{Connection, ConnectionProperties};

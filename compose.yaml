@@ -3,34 +3,50 @@ services:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
-      - "5672:5672"   # AMQP port for RabbitMQ
+      - "5672:5672" # AMQP port for RabbitMQ
       - "15672:15672" # RabbitMQ Management UI
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq # Persist data
+      - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
       interval: 30s
       timeout: 10s
       retries: 5
 
-  rust-app:
+  producer:
     build:
-      context: .  # Build the Rust app from the current directory
+      context: ./producer # Build the Rust app from the current directory
       dockerfile: Dockerfile
-    container_name: rust-app
+    container_name: producer
     ports:
-      - "3000:3000"  # Expose Rust app on port 3000
+      - "3000:3000" # Expose Rust app on port 3000
     volumes:
-      - .:/usr/src/api-queue-manager  # Mount the current directory to the container
+      - ./producer:/usr/src/producer # Mount the current directory to the container
     depends_on:
-      - rabbitmq  # Ensure RabbitMQ starts before the Rust app
+      - rabbitmq # Ensure RabbitMQ starts before the Rust app
     environment:
       RABBITMQ_ADDR: amqp://guest:guest@rabbitmq:5672 # Optional: Set RabbitMQ connection string for future use
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+  consumer:
+    build:
+      context: ./consumer # Build the consumer service from the 'consumer' directory
+      dockerfile: Dockerfile
+    container_name: consumer
+    depends_on:
+      - producer # Ensure the producer starts before the consumer app
+    environment:
+      RABBITMQ_ADDR: amqp://guest:guest@rabbitmq:5672
+    healthcheck:
+      test: ["CMD", "pgrep", "consumer"] # Simple check to ensure the consumer process is running
       interval: 30s
       timeout: 10s
       retries: 5

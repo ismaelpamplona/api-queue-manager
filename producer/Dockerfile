@@ -5,7 +5,7 @@ FROM rust:1.80.1-slim
 RUN cargo install cargo-watch
 
 # Set the working directory inside the container
-WORKDIR /usr/src/api-queue-manager
+WORKDIR /usr/src/producer
 
 # Copy the Cargo.toml and Cargo.lock files
 COPY Cargo.toml Cargo.lock ./

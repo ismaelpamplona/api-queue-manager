@@ -1,5 +1,5 @@
 [package]
-name = "api-queue-manager"
+name = "producer"
 version = "0.1.0"
 edition = "2021"
 
@@ -15,5 +15,5 @@ tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 
 [[bin]]
-name = "api-queue-manager"
+name = "producer"
 path = "src/main.rs"

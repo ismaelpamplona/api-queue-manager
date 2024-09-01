@@ -1,28 +1,33 @@
 use crate::models::{ApiRequest, ApiResponse};
-use axum::{extract::Json, http::StatusCode};
+use axum::{
+    extract::Json,
+    http::{Method, StatusCode},
+};
 use lapin::{options::BasicPublishOptions, BasicProperties, Channel};
 use serde_json;
 use std::sync::Arc;
 
-pub async fn handle_put_request(
+pub async fn handle_request(
+    method: Method,
     Json(payload): Json<ApiRequest>,
-    rabbitmq_channel: Arc<Channel>, // Accept Arc<Channel> now
+    rabbitmq_channel: Arc<Channel>,
 ) -> Result<Json<ApiResponse>, StatusCode> {
-    println!("Received PUT request: {:?}", payload);
+    println!("Received {:?} request: {:?}", method, payload);
 
-    // Serialize the payload to JSON
     let payload_json = match serde_json::to_string(&payload) {
         Ok(json) => json,
-        Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(_) => {
+            println!("Failed to serialize payload to JSON");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
     };
 
-    // Publish the message to RabbitMQ
     if let Err(err) = rabbitmq_channel
         .basic_publish(
             "",             // Default exchange
             "api_requests", // Queue name
             BasicPublishOptions::default(),
-            payload_json.as_bytes(), // Payload data
+            payload_json.as_bytes(),
             BasicProperties::default(),
         )
         .await
@@ -32,7 +37,7 @@ pub async fn handle_put_request(
     }
 
     Ok(Json(ApiResponse {
-        status: "success".to_string(),
-        message: "PUT request processed".to_string(),
+        status: StatusCode::ACCEPTED, // Use StatusCode::ACCEPTED to indicate request is queued for processing
+        message: format!("{:?} request has been enqueued for processing.", method),
     }))
 }

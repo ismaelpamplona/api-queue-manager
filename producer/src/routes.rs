@@ -1,43 +1,40 @@
-use crate::handlers::{
-    delete::handle_delete_request, get::handle_get_request, post::handle_post_request,
-    put::handle_put_request,
-};
+use crate::handler::handle_request;
 use axum::{
+    http::Method,
     routing::{delete, get, post, put},
     Router,
 };
 use lapin::Channel;
-use std::sync::Arc;
+use std::sync::Arc; // Assume a combined handler as described
 
-pub fn run(rabbitmq_channel: Channel) -> Router {
-    // Use Arc to allow shared ownership of the RabbitMQ channel across multiple handlers
-    let rabbitmq_channel = Arc::new(rabbitmq_channel);
-
+pub fn run(rabbitmq_channel: Arc<Channel>) -> Router {
     Router::new()
         .route(
-            "/",
-            get(|| async { "Welcome to the API Queue Manager! 🦀" }),
+            "/request",
+            get({
+                let rabbitmq_channel = rabbitmq_channel.clone();
+                move |req| handle_request(Method::GET, req, rabbitmq_channel)
+            }),
         )
         .route(
             "/request",
             post({
-                let channel = Arc::clone(&rabbitmq_channel);
-                move |req| handle_post_request(req, channel)
+                let rabbitmq_channel = rabbitmq_channel.clone();
+                move |req| handle_request(Method::POST, req, rabbitmq_channel)
             }),
         )
-        .route("/request", get(handle_get_request))
         .route(
             "/request",
             put({
-                let channel = Arc::clone(&rabbitmq_channel);
-                move |req| handle_put_request(req, channel)
+                let rabbitmq_channel = rabbitmq_channel.clone();
+                move |req| handle_request(Method::PUT, req, rabbitmq_channel)
             }),
         )
         .route(
             "/request",
             delete({
-                let channel = Arc::clone(&rabbitmq_channel);
-                move |req| handle_delete_request(req, channel)
+                let rabbitmq_channel = rabbitmq_channel.clone();
+                move |req| handle_request(Method::DELETE, req, rabbitmq_channel)
             }),
         )
 }

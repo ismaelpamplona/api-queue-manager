@@ -1,5 +1,19 @@
 # API Queue Manager
 
+```mermaid
+flowchart LR
+    A[Client] --> |request| B[API \n Gateway]
+    B --> C["Job Queue \n (RabbitMQ)"]
+    C --> D["Worker Queue \n (RabbitMQ)"]
+    D --> E[Rate \n Limiter]
+    E --> F[Thid part \n API]
+    F --> G[Rate Limiter \n Check]
+    G --> H["Worker Queue \n (RabbitMQ) \n Response \n Handling"]
+    H --> I["Job Queue \n (RabbitMQ) \n Completion"]
+    I --> J[API Gateway \n Responds \n to Client]
+    J --> |response| A
+```
+
 API Queue Manager is a Rust-based service built using Axum that helps manage and queue API requests to a third-party API, especially when dealing with rate limits. This project is designed to be API-agnostic and can handle various types of HTTP requests such as GET, POST, PUT, and DELETE.
 
 ## Features

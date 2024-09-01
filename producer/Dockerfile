@@ -5,16 +5,13 @@ FROM rust:1.80.1-slim
 RUN cargo install cargo-watch
 
 # Set the working directory inside the container
-WORKDIR /usr/src/producer
+WORKDIR /usr/src/app
 
-# Copy the Cargo.toml and Cargo.lock files
-COPY Cargo.toml Cargo.lock ./
+# Copy the entire workspace to ensure all crates are included
+COPY . .
 
-# Copy the source code
-COPY src ./src
-
-# Install dependencies only (to cache them)
-RUN cargo build --release
+# Install dependencies and build the producer crate only
+RUN cargo build --release --manifest-path=producer/Cargo.toml
 
 # Expose the port that the application will run on
 EXPOSE 3000

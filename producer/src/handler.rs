@@ -1,9 +1,9 @@
-use crate::models::{ApiRequest, ApiResponse};
 use axum::{
     extract::Json,
     http::{Method, StatusCode},
 };
 use lapin::{options::BasicPublishOptions, BasicProperties, Channel};
+use models::{ApiRequest, ApiResponse};
 use serde_json;
 use std::sync::Arc;
 

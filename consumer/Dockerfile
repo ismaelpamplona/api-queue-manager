@@ -5,16 +5,15 @@ FROM rust:1.80.1-slim
 RUN cargo install cargo-watch
 
 # Set the working directory inside the container
-WORKDIR /usr/src/consumer
+WORKDIR /usr/src/app
 
-# Copy the Cargo.toml and Cargo.lock files
-COPY Cargo.toml Cargo.lock ./
+# Copy the entire workspace to ensure all crates are included
+COPY . .
 
-# Copy the source code
-COPY src ./src
+# Install dependencies and build the consumer crate only
+RUN cargo build --release --manifest-path=consumer/Cargo.toml
 
-# Install dependencies only (to cache them)
-RUN cargo build --release
+# No port exposed for the consumer in this example, unless necessary
 
-# Use cargo-watch to monitor for changes and reload
+# Start the consumer directly
 CMD ["cargo", "watch", "-x", "run"]

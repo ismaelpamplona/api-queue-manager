@@ -18,13 +18,13 @@ services:
 
   producer:
     build:
-      context: ./producer # Build the Rust app from the current directory
-      dockerfile: Dockerfile
+      context: . # Build from the root of the workspace
+      dockerfile: producer/Dockerfile
     container_name: producer
     ports:
       - "3000:3000" # Expose Rust app on port 3000
     volumes:
-      - ./producer:/usr/src/producer # Mount the current directory to the container
+      - .:/usr/src/app # Mount the current directory to the container
     depends_on:
       - rabbitmq # Ensure RabbitMQ starts before the Rust app
     environment:
@@ -38,13 +38,15 @@ services:
 
   consumer:
     build:
-      context: ./consumer # Build the consumer service from the 'consumer' directory
-      dockerfile: Dockerfile
+      context: . # Build from the root of the workspace
+      dockerfile: consumer/Dockerfile
     container_name: consumer
     depends_on:
       - producer # Ensure the producer starts before the consumer app
     environment:
       RABBITMQ_ADDR: amqp://guest:guest@rabbitmq:5672
+    volumes:
+      - .:/usr/src/app # Mount the current directory to the container
     healthcheck:
       test: ["CMD", "pgrep", "consumer"] # Simple check to ensure the consumer process is running
       interval: 30s

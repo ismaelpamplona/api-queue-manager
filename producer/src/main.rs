@@ -1,5 +1,4 @@
 mod handler;
-mod models;
 mod rabbitmq;
 mod routes; // Import the routes module
 

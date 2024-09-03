@@ -2,12 +2,13 @@ use lapin::message::Delivery;
 use lapin::options::BasicAckOptions;
 use models::{ApiRequest, ApiResponse};
 use reqwest::{Client, Method};
+use serde_json::from_slice;
 use std::result::Result;
 use tracing::info;
 
 pub async fn handle_message(delivery: Delivery) -> Result<(), String> {
     // Deserialize the message payload into ApiRequest
-    let request: ApiRequest = match serde_json::from_slice(&delivery.data) {
+    let request: ApiRequest = match from_slice(&delivery.data) {
         Ok(req) => req,
         Err(e) => {
             eprintln!("Failed to deserialize message: {:?}", e);
@@ -26,7 +27,7 @@ pub async fn handle_message(delivery: Delivery) -> Result<(), String> {
     // Execute the HTTP request
     match execute_request(&http_client, request).await {
         Ok(resp) => {
-            info!("Successfully processed request: {:?}", resp);
+            info!("\n\n Successfully processed request: \n\n {:?} \n\n ", resp);
         }
         Err(e) => {
             eprintln!("Failed to process request: {:?}", e);
@@ -43,7 +44,7 @@ pub async fn handle_message(delivery: Delivery) -> Result<(), String> {
 }
 
 pub async fn execute_request(client: &Client, request: ApiRequest) -> Result<ApiResponse, String> {
-    let url = format!("http://localhost:3000{}", request.endpoint); // Construct URL from endpoint
+    let url = format!("{}", request.endpoint); // Construct URL from endpoint
 
     let response = match request.method {
         Method::GET => client.get(&url).send().await,

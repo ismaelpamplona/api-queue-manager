@@ -10,6 +10,10 @@ use std::sync::Arc; // Assume a combined handler as described
 pub fn run(rabbitmq_channel: Arc<Channel>) -> Router {
     Router::new()
         .route(
+            "/",
+            get(|| async { "Welcome to the API Queue Manager! 🦀" }),
+        )
+        .route(
             "/request",
             get({
                 let rabbitmq_channel = rabbitmq_channel.clone();

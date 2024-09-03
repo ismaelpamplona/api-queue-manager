@@ -4,3 +4,4 @@ members = [
     "consumer",
     "models"
 ]
+resolver = "2"

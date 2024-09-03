@@ -1,6 +1,12 @@
 # Use the official Rust image as a base
 FROM rust:1.80.1-slim
 
+# Install necessary dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install cargo-watch for monitoring file changes
 RUN cargo install cargo-watch
 
@@ -10,10 +16,11 @@ WORKDIR /usr/src/app
 # Copy the entire workspace to ensure all crates are included
 COPY . .
 
-# Install dependencies and build the consumer crate only
-RUN cargo build --release --manifest-path=consumer/Cargo.toml
+# Ensure that the working directory is set to the consumer crate
+WORKDIR /usr/src/app/consumer
 
-# No port exposed for the consumer in this example, unless necessary
+# Install dependencies and build the consumer crate only
+RUN cargo build --release
 
 # Start the consumer directly
-CMD ["cargo", "watch", "-x", "run"]
+CMD ["cargo", "watch", "-x", "run --bin consumer"]

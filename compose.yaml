@@ -29,12 +29,6 @@ services:
       - rabbitmq # Ensure RabbitMQ starts before the Rust app
     environment:
       RABBITMQ_ADDR: amqp://guest:guest@rabbitmq:5672 # Optional: Set RabbitMQ connection string for future use
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000 || exit 1"]
-      interval: 10s
-      timeout: 10s
-      start_period: 60s
-      retries: 3
 
   consumer:
     build:
@@ -42,16 +36,11 @@ services:
       dockerfile: consumer/Dockerfile
     container_name: consumer
     depends_on:
-      - producer # Ensure the producer starts before the consumer app
+      - producer
     environment:
       RABBITMQ_ADDR: amqp://guest:guest@rabbitmq:5672
     volumes:
       - .:/usr/src/app # Mount the current directory to the container
-    healthcheck:
-      test: ["CMD", "pgrep", "consumer"] # Simple check to ensure the consumer process is running
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
 volumes:
   rabbitmq_data: # Named volume for persisting RabbitMQ data

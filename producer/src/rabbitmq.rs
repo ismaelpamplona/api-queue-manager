@@ -1,4 +1,3 @@
-// src/rabbitmq.rs
 use lapin::{options::*, types::FieldTable, Channel, Connection, ConnectionProperties, Result};
 use tracing::info;
 

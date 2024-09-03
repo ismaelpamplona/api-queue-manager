@@ -2,3 +2,5 @@
 /consumer/target
 /models/target
 /target
+/generate_markdown_from_files.sh
+/output.md

@@ -3,8 +3,8 @@ services:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
-      - "5672:5672" # AMQP port for RabbitMQ
-      - "15672:15672" # RabbitMQ Management UI
+      - "5672:5672" # AMQP port
+      - "15672:15672" # Management UI
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
@@ -12,35 +12,44 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      interval: 5s
+      timeout: 5s
+      retries: 3
 
   producer:
     build:
-      context: . # Build from the root of the workspace
+      context: .
       dockerfile: producer/Dockerfile
     container_name: producer
     ports:
-      - "3000:3000" # Expose Rust app on port 3000
+      - "3000:3000"
     volumes:
-      - .:/usr/src/app # Mount the current directory to the container
+      - .:/usr/src/app
     depends_on:
-      - rabbitmq # Ensure RabbitMQ starts before the Rust app
+      rabbitmq:
+        condition: service_healthy
     environment:
-      RABBITMQ_ADDR: amqp://guest:guest@rabbitmq:5672 # Optional: Set RabbitMQ connection string for future use
+      RABBITMQ_ADDR: amqp://guest:guest@rabbitmq:5672
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
 
   consumer:
     build:
-      context: . # Build from the root of the workspace
+      context: .
       dockerfile: consumer/Dockerfile
     container_name: consumer
     depends_on:
-      - producer
+      rabbitmq:
+        condition: service_healthy
+      producer:
+        condition: service_healthy
     environment:
       RABBITMQ_ADDR: amqp://guest:guest@rabbitmq:5672
     volumes:
-      - .:/usr/src/app # Mount the current directory to the container
+      - .:/usr/src/app
 
 volumes:
-  rabbitmq_data: # Named volume for persisting RabbitMQ data
+  rabbitmq_data:

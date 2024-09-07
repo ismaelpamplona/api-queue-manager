@@ -1,8 +1,9 @@
 # Use the official Rust image as a base
 FROM rust:1.80.1-slim
 
-# Install necessary dependencies
+# Install necessary dependencies including curl
 RUN apt-get update && apt-get install -y \
+    curl \
     pkg-config \
     libssl-dev \
     && rm -rf /var/lib/apt/lists/*

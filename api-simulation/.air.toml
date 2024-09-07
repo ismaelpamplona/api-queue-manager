@@ -1,0 +1,18 @@
+# .air.toml
+
+# Basic settings
+root = "."  # Root directory
+tmp_dir = "tmp"  # Temp directory where the build artifacts are stored
+
+[build]
+  bin = "./tmp/api-simulation"  # Path to the built binary
+  cmd = "./tmp/api-simulation"  # Command to run the binary
+  full_bin = "go build -o ./tmp/api-simulation main.go"  # Full build command
+
+[log]
+  color = true  # Enable colored output
+  time = true   # Show time in log
+
+[watch]
+  includes = ["**/*.go"]  # Watch .go files in all subdirectories
+  excludes = ["tmp", "vendor"]  # Exclude tmp and vendor directories

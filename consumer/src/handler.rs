@@ -6,7 +6,7 @@ use serde_json::from_slice;
 use std::result::Result;
 use tracing::info;
 
-pub async fn handle_message(delivery: Delivery) -> Result<(), String> {
+pub async fn handle_message(delivery: Delivery, request_number: u32) -> Result<(), String> {
     // Deserialize the message payload into ApiRequest
     let request: ApiRequest = match from_slice(&delivery.data) {
         Ok(req) => req,
@@ -23,9 +23,13 @@ pub async fn handle_message(delivery: Delivery) -> Result<(), String> {
 
     let http_client = Client::new();
 
-    match execute_request(&http_client, request).await {
-        Ok(resp) => {
-            info!("\n\n Successfully processed request: \n\n {:?} \n\n ", resp);
+    // Pass the request number to print it instead of the response
+    match execute_request(&http_client, request, request_number).await {
+        Ok(_) => {
+            info!(
+                "\n\n Successfully processed request number: {} \n\n",
+                request_number
+            );
         }
         Err(e) => {
             eprintln!("Failed to process request: {:?}", e);
@@ -41,7 +45,11 @@ pub async fn handle_message(delivery: Delivery) -> Result<(), String> {
     Ok(())
 }
 
-pub async fn execute_request(client: &Client, request: ApiRequest) -> Result<ApiResponse, String> {
+pub async fn execute_request(
+    client: &Client,
+    request: ApiRequest,
+    request_number: u32,
+) -> Result<(), String> {
     let url = request.endpoint;
 
     let response = match request.method {
@@ -60,9 +68,5 @@ pub async fn execute_request(client: &Client, request: ApiRequest) -> Result<Api
         Err(err) => return Err(format!("HTTP request error: {:?}", err)),
     };
 
-    // Deserialize response into ApiResponse
-    let status = response.status();
-    let message = response.text().await.unwrap_or_default();
-
-    Ok(ApiResponse { status, message })
+    Ok(())
 }

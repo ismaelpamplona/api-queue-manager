@@ -51,5 +51,18 @@ services:
     volumes:
       - .:/usr/src/app
 
+  api-simulation:
+    build:
+      context: ./api-simulation
+      dockerfile: Dockerfile
+    container_name: api-simulation
+    ports:
+      - "8080:8080" # Expose port 8080 for the Go API
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 volumes:
   rabbitmq_data:

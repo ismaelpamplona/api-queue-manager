@@ -21,10 +21,8 @@ pub async fn handle_message(delivery: Delivery) -> Result<(), String> {
         }
     };
 
-    // Initialize an HTTP client
     let http_client = Client::new();
 
-    // Execute the HTTP request
     match execute_request(&http_client, request).await {
         Ok(resp) => {
             info!("\n\n Successfully processed request: \n\n {:?} \n\n ", resp);
@@ -44,7 +42,7 @@ pub async fn handle_message(delivery: Delivery) -> Result<(), String> {
 }
 
 pub async fn execute_request(client: &Client, request: ApiRequest) -> Result<ApiResponse, String> {
-    let url = format!("{}", request.endpoint); // Construct URL from endpoint
+    let url = request.endpoint;
 
     let response = match request.method {
         Method::GET => client.get(&url).send().await,

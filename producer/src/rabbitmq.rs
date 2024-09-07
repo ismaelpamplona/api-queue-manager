@@ -11,10 +11,8 @@ pub async fn setup_rabbitmq() -> Result<Channel> {
 
     info!("Connected to RabbitMQ");
 
-    // Create a channel on the connection
     let channel = connection.create_channel().await?;
 
-    // Declare a queue named "api_requests"
     channel
         .queue_declare(
             "api_requests", // Queue name

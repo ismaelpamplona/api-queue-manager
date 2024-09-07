@@ -13,11 +13,9 @@ pub async fn start_consumer(connection: Connection) -> lapin::Result<()> {
         )
         .await?;
 
-    // Loop to consume messages
     while let Some(delivery) = consumer.next().await {
         match delivery {
             Ok(delivery) => {
-                // Process the message
                 if let Err(e) = handle_message(delivery).await {
                     eprintln!("Error handling message: {:?}", e);
                 }

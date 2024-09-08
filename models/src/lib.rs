@@ -10,6 +10,7 @@ pub struct ApiRequest {
     pub method: Method,
     pub endpoint: String,
     pub payload: Option<Value>,
+    pub retry_count: Option<u32>, // Add retry count to track retries
 }
 
 #[serde_as]

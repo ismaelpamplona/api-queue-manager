@@ -8,6 +8,7 @@ tmp_dir = "tmp"  # Temp directory where the build artifacts are stored
   bin = "./tmp/api-simulation"  # Path to the built binary
   cmd = "./tmp/api-simulation"  # Command to run the binary
   full_bin = "go build -o ./tmp/api-simulation main.go"  # Full build command
+  pre_cmd = "fuser -k 8080/tcp"  # Kill any process bound to port 8080 before starting the new one
 
 [log]
   color = true  # Enable colored output

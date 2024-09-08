@@ -6,7 +6,7 @@ use serde_json::from_slice;
 use std::result::Result;
 use tracing::info;
 
-pub async fn handle_message(delivery: Delivery, request_number: u32) -> Result<(), String> {
+pub async fn handle_message(delivery: Delivery, request_number: usize) -> Result<(), String> {
     // Deserialize the message payload into ApiRequest
     let request: ApiRequest = match from_slice(&delivery.data) {
         Ok(req) => req,
@@ -25,10 +25,10 @@ pub async fn handle_message(delivery: Delivery, request_number: u32) -> Result<(
 
     // Pass the request number to print it instead of the response
     match execute_request(&http_client, request, request_number).await {
-        Ok(_) => {
+        Ok(resp) => {
             info!(
-                "\n\n Successfully processed request number: {} \n\n",
-                request_number
+                "\n\n Successfully processed request number: {} \n\n Response: {:?} \n\n",
+                request_number, resp
             );
         }
         Err(e) => {
@@ -48,15 +48,44 @@ pub async fn handle_message(delivery: Delivery, request_number: u32) -> Result<(
 pub async fn execute_request(
     client: &Client,
     request: ApiRequest,
-    request_number: u32,
-) -> Result<(), String> {
+    request_number: usize,
+) -> Result<ApiResponse, String> {
     let url = request.endpoint;
 
+    // Generate a constant or reusable X-Request-ID
+    let fake_request_id = format!("request-1"); // Use the same request ID for all
+
     let response = match request.method {
-        Method::GET => client.get(&url).send().await,
-        Method::POST => client.post(&url).json(&request.payload).send().await,
-        Method::PUT => client.put(&url).json(&request.payload).send().await,
-        Method::DELETE => client.delete(&url).send().await,
+        Method::GET => {
+            client
+                .get(&url)
+                .header("X-Request-ID", fake_request_id) // Simulating different clients
+                .send()
+                .await
+        }
+        Method::POST => {
+            client
+                .post(&url)
+                .json(&request.payload)
+                .header("X-Request-ID", fake_request_id)
+                .send()
+                .await
+        }
+        Method::PUT => {
+            client
+                .put(&url)
+                .json(&request.payload)
+                .header("X-Request-ID", fake_request_id)
+                .send()
+                .await
+        }
+        Method::DELETE => {
+            client
+                .delete(&url)
+                .header("X-Request-ID", fake_request_id)
+                .send()
+                .await
+        }
         _ => {
             return Err("Unsupported HTTP method".to_string());
         }
@@ -68,5 +97,9 @@ pub async fn execute_request(
         Err(err) => return Err(format!("HTTP request error: {:?}", err)),
     };
 
-    Ok(())
+    // Deserialize response into ApiResponse
+    let status = response.status();
+    let message = response.text().await.unwrap_or_default();
+
+    Ok(ApiResponse { status, message })
 }

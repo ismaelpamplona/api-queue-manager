@@ -12,8 +12,8 @@ import (
 	"time"
 )
 
-const rateLimit = 10                // Max 10 requests per minute
-const rateLimitWindow = time.Minute // 1-minute window
+const rateLimit = 10                     // Max 10 requests per minute
+const rateLimitWindow = time.Minute / 30 // 1-minute window
 
 // RateLimiter struct to keep track of request counts per client
 type RateLimiter struct {

@@ -57,9 +57,9 @@ services:
       dockerfile: Dockerfile
     container_name: api-simulation
     ports:
-      - "8080:8080" # Expose port 8080 for the Go API
+      - "8080:8080"
     volumes:
-      - ./api-simulation:/app # Mount local code directory to /app inside the container
+      - ./api-simulation:/app
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080"]
       interval: 10s

@@ -1,35 +1,27 @@
-# api-simulation/Dockerfile
-
 # Use the official Golang image as a base
 FROM golang:1.22-alpine
 
 # Install necessary dependencies including curl, git, and bash
 RUN apk add --no-cache curl git bash
 
-# Install air for live-reload
-RUN curl -sSfL https://raw.githubusercontent.com/cosmtrek/air/master/install.sh | sh \
-    && mv ./bin/air /usr/local/bin/air  # Move air to a directory in PATH
-
 # Set the working directory inside the container
 WORKDIR /app
 
-# Create the tmp directory for build artifacts
-RUN mkdir -p /app/tmp
-
-# Copy the go.mod file only (no go.sum needed)
+# Copy go.mod and go.sum to ensure Go dependencies are handled before copying the source code
 COPY go.mod ./
+# COPY go.sum ./   # Uncomment if you have a go.sum file
 
-# Install Go dependencies (if any)
+# Install Go dependencies
 RUN go mod tidy
 
-# Copy the remaining source code
-COPY . .
+# Copy the entire project source code
+COPY . .  
 
-# Build the Go binary manually to ensure it works before `air`
-RUN go build -o ./tmp/api-simulation main.go
+# Build the Go binary manually
+RUN go build -o ./tmp/api-simulation ./cmd/api-simulation/main.go
 
-# Expose port 8080
+# Expose port 8080 for the application
 EXPOSE 8080
 
-# Use air to auto-reload the server when files change
-CMD ["air"]
+# Directly run the pre-built Go binary
+CMD ["./tmp/api-simulation"]

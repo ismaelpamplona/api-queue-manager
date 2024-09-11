@@ -1,21 +1,35 @@
 # API Queue Manager
 
 ```mermaid
-flowchart LR
-    A[Client] --> |request| B[Producer
- API Gateway]
-    B --> C["Job Queue
- (RabbitMQ)"]
-    C --> D[Consumer
- Process]
-    D --> E[Rate
-Limiter]
-    E --> F[Third Party
- API Simulation]
-    F --> G[Consumer
- Marks Job Done]
-    G --> H[Job
-Completed]
+sequenceDiagram
+    participant Client
+    participant Producer
+    participant RabbitMQ
+    participant Consumer
+    participant RateLimiter
+
+    Client->>Producer: Send request (HTTP)
+    Producer->>RabbitMQ: Publish message to queue (AMQP)
+    RabbitMQ->>Consumer: Deliver message from queue (AMQP)
+    Consumer->>RateLimiter: Check if rate limit is exceeded (Internal)
+    alt Rate limit hit
+        RateLimiter-->>Consumer: Rate limit exceeded (Internal)
+        Consumer->>RabbitMQ: NACK message (AMQP)
+        Consumer->>RabbitMQ: Republish message (AMQP)
+        Consumer->>Consumer: Wait (Internal)
+        RabbitMQ->>Consumer: Retry after delay (AMQP)
+    else Rate limit not hit
+        RateLimiter-->>Consumer: Rate limit OK (Internal)
+        alt Error during processing
+            Consumer-->>Client: 500 Internal Server Error (HTTP)
+            Consumer->>RabbitMQ: NACK message (AMQP)
+        else Success
+            Consumer-->>Client: 200 OK (HTTP)
+            Consumer->>RabbitMQ: ACK message (AMQP)
+        end
+    end
+
+
 ```
 
 **API Queue Manager** is a distributed, Rust-based system that manages and queues API requests to third-party APIs. It leverages RabbitMQ to queue and process requests asynchronously, ensuring that third-party APIs are not overwhelmed by requests and respecting any rate limits.
@@ -48,7 +62,7 @@ Follow these steps to set up and run the project using Docker Compose.
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/api-queue-manager.git
+git clone https://github.com/ismaelpamplona/api-queue-manager.git
 cd api-queue-manager
 ```
 
@@ -114,17 +128,10 @@ This script sends multiple requests to the Producer, which enqueues them in Rabb
 ```
 api-queue-manager/
 ├── api-simulation/   # Go-based rate-limited API simulation
-│   ├── cmd/          # Main application entrypoint
-│   ├── internal/     # Rate limiter and HTTP server implementation
-│   └── pkg/          # Utilities for the Go server
 ├── consumer/         # Rust-based RabbitMQ consumer
-│   └── src/
 ├── producer/         # Rust-based API gateway and RabbitMQ producer
-│   └── src/
 ├── models/           # Shared models between producer and consumer
-├── Dockerfile        # Dockerfile for the Producer and Consumer
-├── compose.yaml      # Docker Compose file to orchestrate all services
-└── send_requests.sh  # Script to send multiple requests for testing
+└── compose.yaml      # Docker Compose file to orchestrate all services
 ```
 
 - **Producer**: Accepts HTTP requests and adds them to the RabbitMQ queue.

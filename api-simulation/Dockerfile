@@ -4,24 +4,21 @@ FROM golang:1.22-alpine
 # Install necessary dependencies including curl, git, and bash
 RUN apk add --no-cache curl git bash
 
+# Install air from the new repository path
+RUN go install github.com/air-verse/air@latest
+
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy go.mod and go.sum to ensure Go dependencies are handled before copying the source code
+# Copy go.mod to leverage Docker layer caching when building dependencies
 COPY go.mod ./
-# COPY go.sum ./   # Uncomment if you have a go.sum file
-
-# Install Go dependencies
 RUN go mod tidy
 
-# Copy the entire project source code
-COPY . .  
-
-# Build the Go binary manually
-RUN go build -o ./tmp/api-simulation ./cmd/api-simulation/main.go
+# Copy the rest of the source code to the working directory
+COPY . .
 
 # Expose port 8080 for the application
 EXPOSE 8080
 
-# Directly run the pre-built Go binary
-CMD ["./tmp/api-simulation"]
+# Use air for live-reloading during development
+CMD ["air"]

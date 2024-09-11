@@ -1,0 +1,19 @@
+# Working directory
+root = "."
+tmp_dir = "tmp"
+
+# Go build options
+[build]
+cmd = "go build -o tmp/api-simulation ./cmd/api-simulation/main.go"
+bin = "tmp/api-simulation"
+full_bin = "tmp/api-simulation"
+delve = false
+
+# Watch patterns
+[watch]
+directories = ["./"]
+extensions = ["go", "tpl", "html", "js", "json"]
+
+# Log options
+[log]
+time = false

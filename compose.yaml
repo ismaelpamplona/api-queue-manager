@@ -1,10 +1,10 @@
 services:
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: rabbitmq
+    container_name: rabbitmq-dev
     ports:
-      - "5672:5672" # AMQP port
-      - "15672:15672" # Management UI
+      - "5673:5672" # AMQP port
+      - "15673:15672" # Management UI
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
@@ -19,12 +19,12 @@ services:
   producer:
     build:
       context: .
-      dockerfile: producer/Dockerfile
+      dockerfile: producer/Dockerfile.dev
     container_name: producer
     ports:
       - "3000:3000"
     volumes:
-      - .:/usr/src/app
+      - ${PWD}:/usr/src/app
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -36,11 +36,13 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    env_file:
+      - .env.dev
 
   consumer:
     build:
       context: .
-      dockerfile: consumer/Dockerfile
+      dockerfile: consumer/Dockerfile.dev
     container_name: consumer
     depends_on:
       rabbitmq:
@@ -50,17 +52,21 @@ services:
     environment:
       RABBITMQ_ADDR: amqp://guest:guest@rabbitmq:5672
     volumes:
-      - .:/usr/src/app
+      - ${PWD}:/usr/src/app # Use ${PWD} for dynamic paths
+    env_file:
+      - .env.dev
 
   api-simulation:
     build:
       context: ./api-simulation
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: api-simulation
     ports:
       - "8080:8080"
     volumes:
       - ./api-simulation:/app:delegated # Mount the local folder to the container
+    env_file:
+      - .env.dev
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080"]
       interval: 10s

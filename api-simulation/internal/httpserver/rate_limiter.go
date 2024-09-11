@@ -8,7 +8,7 @@ import (
 )
 
 const rateLimit = 10
-const rateLimitWindow = time.Minute / 30
+const rateLimitWindow = time.Minute / 2
 
 // RateLimiter struct to keep track of request counts per client
 type RateLimiter struct {

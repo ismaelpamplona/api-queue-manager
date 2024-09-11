@@ -1,8 +1,11 @@
 package utils
 
-import "net/http"
+import (
+	"net/http"
+)
 
 func GetClientIP(r *http.Request) string {
+
 	clientID := r.Header.Get("X-Request-ID")
 
 	if clientID == "" {

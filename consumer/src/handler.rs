@@ -14,7 +14,7 @@ pub async fn handle_message(
     delivery: Delivery,
     request_number: usize,
     rabbitmq_channel: Arc<Channel>,
-) -> Result<(), String> {
+) -> Result<bool, String> {
     // Deserialize the message payload into ApiRequest
     let mut request: ApiRequest = match from_slice(&delivery.data) {
         Ok(req) => req,
@@ -32,13 +32,15 @@ pub async fn handle_message(
     // Initialize or increment retry count
     let retry_count = request.retry_count.unwrap_or(0);
 
-    // Increment retry count and update the message
-    request.retry_count = Some(retry_count + 1);
-
-    let http_client = Client::new();
+    // Log the retry count for debugging
+    info!(
+        "Processing request number: {}, Retry count: {}",
+        request_number, retry_count
+    );
 
     // Make the HTTP request
-    let res = match execute_request(&http_client, &request, request_number).await {
+    let http_client = Client::new();
+    let res = match execute_request(&http_client, &request).await {
         Ok(resp) => resp,
         Err(e) => {
             eprintln!("Failed to process request: {:?}", e);
@@ -51,7 +53,7 @@ pub async fn handle_message(
         }
     };
 
-    // Handle the res
+    // Handle the response, checking for rate limit issues
     if res.status == StatusCode::TOO_MANY_REQUESTS || res.status == StatusCode::FORBIDDEN {
         // If rate limit is hit, introduce a delay before retrying based on retry_count
         let delay_seconds = match retry_count {
@@ -69,6 +71,9 @@ pub async fn handle_message(
         // Wait for the determined delay before retrying
         sleep(Duration::from_secs(delay_seconds)).await;
 
+        // Increment retry count and update the message before republishing it
+        request.retry_count = Some(retry_count + 1);
+
         // Serialize the request with the updated retry count
         let payload_with_retry_count = match to_vec(&request) {
             Ok(payload) => payload,
@@ -78,8 +83,12 @@ pub async fn handle_message(
             }
         };
 
-        // Log the serialized message with updated retry count
-        info!("Republishing message with retry count: {}", retry_count + 1);
+        // Log the retry count before republishing
+        info!(
+            "Republishing message with retry count: {}, request number: {}",
+            retry_count + 1,
+            request_number
+        );
 
         // Republish the message with the updated retry count
         rabbitmq_channel
@@ -101,6 +110,8 @@ pub async fn handle_message(
             })
             .await
             .map_err(|err| err.to_string())?;
+
+        return Ok(false); // Return false since the request was not processed due to rate limiting
     } else {
         info!(
             "\n\n >>> ✅ Successfully processed request number: {} \n >>> 📨 Response: {:?} \n",
@@ -112,20 +123,15 @@ pub async fn handle_message(
             .ack(BasicAckOptions::default())
             .await
             .map_err(|err| err.to_string())?;
-    }
 
-    Ok(())
+        return Ok(true); // Return true since the request was successfully processed
+    }
 }
 
-pub async fn execute_request(
-    client: &Client,
-    request: &ApiRequest,
-    request_number: usize,
-) -> Result<ApiResponse, String> {
+pub async fn execute_request(client: &Client, request: &ApiRequest) -> Result<ApiResponse, String> {
     let url = &request.endpoint;
 
-    // Generate a constant or reusable X-Request-ID
-    let fake_request_id = format!("request-1"); // Use the same request ID for all
+    let fake_request_id = format!("request-1");
 
     let res = match request.method {
         Method::GET => {

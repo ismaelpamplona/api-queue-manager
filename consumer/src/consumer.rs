@@ -20,11 +20,15 @@ pub async fn start_consumer(connection: Connection) -> lapin::Result<()> {
         match delivery {
             Ok(delivery) => {
                 // Pass the shared rabbitmq_channel (Arc<Channel>) to handle_message
-                if let Err(e) = handle_message(delivery, request_number, Arc::clone(&channel)).await
+                if let Ok(should_increment) =
+                    handle_message(delivery, request_number, Arc::clone(&channel)).await
                 {
-                    eprintln!("Error handling message: {:?}", e);
+                    if should_increment {
+                        request_number += 1; // Increment request number only if request is triggered
+                    }
+                } else {
+                    eprintln!("Error handling message.");
                 }
-                request_number += 1; // Increment request number for each message
             }
             Err(e) => {
                 eprintln!("Error in consumer: {:?}", e);

@@ -1,0 +1,36 @@
+# Stage 1: Build stage
+FROM rust:1.80.1-slim AS builder
+
+# Install necessary dependencies
+RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory inside the container
+WORKDIR /usr/src/app
+
+# Copy Cargo files to leverage Docker caching for dependencies
+COPY Cargo.toml Cargo.lock ./
+COPY consumer/Cargo.toml consumer/
+
+# Fetch the dependencies for the entire workspace
+RUN cargo fetch
+
+# Copy the full source code
+COPY . .
+
+# Build the consumer crate in release mode
+RUN cargo build --release --bin consumer
+
+# Stage 2: Final stage with a minimal runtime image
+FROM debian:buster-slim
+
+# Install necessary runtime dependencies
+RUN apt-get update && apt-get install -y libssl1.1 && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the release binary from the builder stage
+COPY --from=builder /usr/src/app/target/release/consumer .
+
+# Run the Rust application
+CMD ["./consumer"]

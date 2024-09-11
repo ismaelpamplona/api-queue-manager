@@ -1,0 +1,36 @@
+# Stage 1: Build stage
+FROM golang:1.22-alpine AS builder
+
+# Install necessary dependencies
+RUN apk add --no-cache curl git bash
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy go.mod and go.sum to leverage Docker caching for dependencies
+COPY go.mod go.sum ./
+RUN go mod tidy
+
+# Copy the rest of the source code
+COPY . .
+
+# Build the Go application for production
+RUN go build -o api-simulation ./cmd/api-simulation/main.go
+
+# Stage 2: Final stage with a minimal image
+FROM alpine:3.18
+
+# Install only necessary runtime dependencies
+RUN apk add --no-cache ca-certificates
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the compiled binary from the builder stage
+COPY --from=builder /app/api-simulation .
+
+# Expose the port that the application will run on
+EXPOSE 8080
+
+# Run the Go application
+CMD ["./api-simulation"]
